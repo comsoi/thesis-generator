@@ -1,0 +1,207 @@
+\documentclass[tikz,border=10pt,convert={density=600,outext=.png}]{standalone}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usetikzlibrary{
+    shapes.geometric,
+    arrows.meta,
+    positioning,
+    fit,
+    backgrounds,
+    calc,
+    shadows.blur
+}
+
+\definecolor{mdgreen}{HTML}{4CAF50}
+\definecolor{typstblue}{HTML}{2196F3}
+\definecolor{pandocorange}{HTML}{FF9800}
+\definecolor{docxpurple}{HTML}{9C27B0}
+\definecolor{mergepink}{HTML}{E91E63}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    box/.style={
+        rectangle,
+        rounded corners=4pt,
+        draw=#1!60!black,
+        fill=#1!8,
+        text=black,
+        align=center,
+        minimum width=3.2cm,
+        inner sep=8pt,
+        font=\small
+    },
+    file/.style={
+        rectangle,
+        rounded corners=2pt,
+        draw=gray!40,
+        fill=gray!3,
+        align=center,
+        minimum width=3.8cm,
+        minimum height=0.7cm,
+        font=\footnotesize\ttfamily
+    },
+    arrow/.style={
+        -{Stealth[length=2.5pt, width=2pt]},
+        thick,
+        draw=gray!50,
+        shorten >=1pt,
+        shorten <=1pt
+    },
+    label/.style={
+        font=\sffamily\footnotesize\bfseries,
+        text=gray!60!black
+    }
+]
+
+% ============================================
+% Row 1: Source
+% ============================================
+\node[file, fill=green!5, draw=mdgreen!40] (md) {
+    \textbf{markdown/*.md}\\
+    chapter-*.md\quad abstract-*.md\\
+    acknowledgment.md
+};
+
+\node[label, above=0.3cm of md] (srclabel) {写作源（纯文本）};
+
+% ============================================
+% Row 2: md2typst
+% ============================================
+\node[box={mdgreen}, below=1.2cm of md] (md2typst) {
+    \textbf{md2typst.py}\\
+    Markdown $\to$ Typst\\
+    章节编号 + 图表标签
+};
+
+\draw[arrow] (md) -- (md2typst);
+
+% ============================================
+% Row 3: main.typ
+% ============================================
+\node[file, fill=blue!5, draw=typstblue!40, below=1.2cm of md2typst] (typst) {
+    \textbf{src/main.typ}\\
+    header.typ + \#bibliography()
+};
+
+\draw[arrow] (md2typst) -- (typst);
+
+% ============================================
+% Row 4: Pandoc
+% ============================================
+\node[box={typstblue}, below=1.2cm of typst, minimum width=6cm] (pandoc) {
+    \textbf{pandoc}\\
+    Lua filters (fix-ref + fix-table-caption + fix-pagebrk)\\
+    --citeproc --csl=ieee.csl --reference-doc=clean\_ref.docx
+};
+
+\draw[arrow] (typst) -- (pandoc);
+
+% ============================================
+% Row 5: Body + TOC
+% ============================================
+\node[file, fill=orange!5, draw=pandocorange!40, below=1.2cm of pandoc, xshift=-2.8cm] (body) {
+    \textbf{main\_content.docx}\\
+    正文排版
+};
+
+\node[file, fill=pandocorange!5, draw=pandocorange!40, below=1.2cm of pandoc, xshift=2.8cm] (extended) {
+    \textbf{extended\_content.docx}\\
+    正文 + 目录
+};
+
+\draw[arrow] (pandoc.south) -- ++(0,-0.3) -| (body.north);
+\draw[arrow] (pandoc.south) -- ++(0,-0.3) -| (extended.north);
+
+\node[box={pandocorange}, right=0.3cm of extended, minimum width=2.2cm, minimum height=1cm] (toc) {
+    \textbf{gen-toc.py}\\
+    目录注入
+};
+
+\draw[arrow] (body.east) -- (toc.west);
+\draw[arrow] (toc.north) -- ++(0,0.3) -| (extended.north east);
+
+% ============================================
+% Row 6: Cover (two templates)
+% ============================================
+\node[file, fill=purple!5, draw=docxpurple!40, below=1.8cm of body, xshift=-2.8cm] (prelimcn) {
+    \textbf{prelim-cn.docx}\\
+    中文封面 + 原创声明 + 摘要
+};
+
+\node[file, fill=docxpurple!5, draw=docxpurple!40, below=1.8cm of body, xshift=2.8cm] (prelimen) {
+    \textbf{prelim-en.docx}\\
+    English cover + declaration + abstract
+};
+
+% prelim templates
+\node[file, fill=gray!3, draw=gray!30, above=0.8cm of prelimcn, minimum width=4.2cm] (prelimcn_tpl) {
+    \textbf{template/prelim-cn.docx}\\
+    \{\{TITLE\_CN\}\}\quad \{\{SID\}\}\quad ... \quad\{\{ABSTRACTCN\}\}
+};
+
+\node[file, fill=gray!3, draw=gray!30, above=0.8cm of prelimen, minimum width=4.2cm] (prelimen_tpl) {
+    \textbf{template/prelim-en.docx}\\
+    \{\{TITLE\_EN\}\}\quad \{\{SID\}\}\quad ... \quad\{\{ABSTRACTEN\}\}
+};
+
+\node[box={docxpurple}, above=0.3cm of prelimcn_tpl, xshift=1.5cm, minimum width=2cm, minimum height=0.7cm] (render) {
+    \textbf{substitute-txt.py}\\
+    config.json
+};
+
+\draw[arrow] (prelimcn_tpl.east) -- ++(1.2,0) |- (render.south west);
+\draw[arrow] (prelimen_tpl.west) -- ++(-1.2,0) |- (render.south east);
+\draw[arrow] (render) |- (prelimcn_tpl.north);
+\draw[arrow] (render) |- (prelimen_tpl.north);
+\draw[arrow] (prelimcn_tpl) -- (prelimcn);
+\draw[arrow] (prelimen_tpl) -- (prelimen);
+
+% ============================================
+% Row 7: Merge
+% ============================================
+\node[box={mergepink}, below=2.2cm of prelimcn, xshift=2.8cm, minimum width=8cm, minimum height=1.4cm] (merge) {
+    \textbf{merge-docs.py + setup-thesis.py}\\
+    封面 $\oplus$ 正文 $\to$ 分节符合并 $\to$ 页码设置 $\to$ 页眉清除
+};
+
+\draw[arrow] (extended.south) -- ++(0,-0.5) -| ([xshift=1.5cm]merge.north);
+\draw[arrow] (prelimcn.south) -- ++(0,-0.3) -| ([xshift=-1.5cm]merge.north);
+\draw[arrow] (prelimen.south) -- ++(0,-0.3) -| (merge.north);
+
+% ============================================
+% Row 8: Final outputs
+% ============================================
+\node[file, fill=red!5, draw=mergepink!50, below=1.2cm of merge, xshift=-2cm] (finalcn) {
+    \textbf{result/thesis-cn.docx}\\
+    中文学位论文
+};
+
+\node[file, fill=red!5, draw=mergepink!50, below=1.2cm of merge, xshift=2cm] (finalen) {
+    \textbf{result/thesis-en.docx}\\
+    English thesis
+};
+
+\draw[arrow] (merge.south) -- ++(0,-0.3) -| (finalcn.north);
+\draw[arrow] (merge.south) -- ++(0,-0.3) -| (finalen.north);
+
+% ============================================
+% Makefile orchestration label
+% ============================================
+\node[
+    rectangle,
+    rounded corners=3pt,
+    draw=gray!30,
+    fill=gray!2,
+    inner sep=4pt,
+    font=\sffamily\footnotesize\bfseries,
+    text=gray!50,
+    below=0.5cm of finalcn,
+    xshift=2cm,
+    minimum width=10cm
+] (make) {
+    \$ make all \quad$\to$\quad 一条命令，完整构建
+};
+
+\end{tikzpicture}
+\end{document}
