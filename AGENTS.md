@@ -31,7 +31,7 @@ Makefile 变量统一风格：`OBJECT_TAG`，如 `PRELIM_TEMPLATE_CN`、`RENDER_
 
 ## 易犯错误
 
-1. **Markdown 表格**：表题必须用 `: 标题`（Pandoc 语法）紧邻表格，**不能**写成 `表 1-1 xxx` 普通段落，否则不会被识别为表格。
+1. **Markdown 表格**：表题用 `: 标题`（Pandoc 语法），与表格之间**留一空行**（紧邻会导致标题在上方时解析失败），**不能**写成 `表 1-1 xxx` 普通段落。
 2. **章节标题格式**：用 `# 标题`，`md2typst.py` 会自动剥离以下手写编号后交给 Typst 统一编号：
 
    | 层级 | 支持格式 | 正则 |
@@ -42,6 +42,7 @@ Makefile 变量统一风格：`OBJECT_TAG`，如 `PRELIM_TEMPLATE_CN`、`RENDER_
 
    手写编号会导致 Typst 二次编号，产生 `1 1.1 xxx` 之类错误。
 3. **图片路径**：markdown 中写 `![caption](images/xxx.png)`。`markdown/images` 是软链接指向 `../figure`，`md2typst.py` 自动把 `images/` 替换为 `figure/`。不要直接写 `figure/`。
+4. **行内公式闭合 `$` 后跟数字需空格**：`$\beta$1` 中 `$1` 被 Pandoc 当作美元金额而非公式分隔符，输出 `$$1`（公式丢失）。加空格：`$\beta$ 1`（输出 `β 1`）。若不想要空格，把数字并入公式：`$\beta 1$`（输出 `β1`）。注意 `$` 后跟字母无此问题（如 `$\beta$a` 正常）。
 
 ## 外部素材导入
 
