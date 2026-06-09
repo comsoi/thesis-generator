@@ -46,7 +46,9 @@ Makefile 变量统一风格：`OBJECT_TAG`，如 `PRELIM_TEMPLATE_CN`、`RENDER_
 
 ## 外部素材导入
 
-给定一个混乱的项目目录（下称 `<proj>`），AI 需将其内容整理为 thesis-generator 可用的 markdown 章节、图片、参考文献。以下为通用处理流程。
+给定一个混乱的项目目录（下称 `<proj>`），AI 需将其内容整理为 thesis-generator 可用的 markdown 章节、图片、参考文献。
+
+**核心原则**：整理完成后，AI **必须先学习** `markdown/` 目录下现有章节的写法风格（摘要、致谢、绪论等），然后**删除这些模板文件**（`.md` 及 `flowchart/` 下的流程图），再基于 `<proj>` 的内容和学到的风格**重写**所有 markdown 章节。
 
 ### 1. 扫描分类
 
@@ -62,34 +64,35 @@ Makefile 变量统一风格：`OBJECT_TAG`，如 `PRELIM_TEMPLATE_CN`、`RENDER_
 | 编译产物 | `*_experiment`/`test_quick*`/`.o`/`.aux`/`.log`/`__pycache__/` | 噪声，删除或 gitignore |
 | 构建文件 | `Makefile`/`CMakeLists.txt` | 保留在原位 |
 
+### 2. 学习现有写法并清理模板
 
-### 2. 提取论文章节
+- **阅读现有模板**：通读 `markdown/` 下所有 `.md` 文件，掌握本项目的写作风格、标题格式、表格/图片/公式用法
+- **学习流程图**：阅读 `flowchart/` 下现有的 `.tex` 源文件，掌握流程图的风格、布局方式、节点样式与连线规则
+- **删除模板文件**：将 `markdown/` 下的所有 `.md` 文件（如 `abstract-*.md`、`acknowledgment.md`、`chapter-*.md`）及 `flowchart/` 下的流程图源文件全部删除
+- 删除后 `markdown/` 目录应仅剩 `images/` 软链接
 
-阅读 `<proj>` 中的所有分析报告 `.md`，判断内容覆盖哪些主题（如算法原理、数据集描述、实验设计、结果分析），然后按以下规则生成 `markdown/chapter-N-*.md`：
+### 3. 提取论文章节
 
-- **章节拆分**：一个 `.md` 覆盖一个独立主题，文件名 `chapter-{N}-{slug}.md`，N 从 2 开始（1 为绪论）
-- **标题格式**：一级 `# 标题`、二级 `## 标题`，编号满足章节标题格式
-- **表格标题**：用 `: 标题` 紧邻表格下一行，不要写成 `表 N-M xxx`
-- **图片引用**：统一改为 `images/xxx.png`，实际图片同时拷贝到 `figure/`
-- **公式**：LaTeX 格式不变，pandoc 自动转换
-- **引用**：用 `[@key]` 格式，BibTeX 条目写入 `src/references.bib`
-- **不要照搬原文**：草稿可能有口语化、重复、标题层级混乱等问题，需整理为正式论文语气
+基于 `<proj>` 内容，参照已学习的风格重写所有章节，生成新的 `markdown/*.md`：
 
-### 3. 图片归集
+- **章节拆分**：按主题拆分，文件名 `chapter-{N}-{slug}.md`，N 从 2 开始（1 为绪论）
+- **标题格式**：一级 `# 标题`、二级 `## 标题`，编号遵循本项目的章节标题格式规则
+- **表格标题**：用 `: 标题`（Pandoc 语法），与表格之间留一空行
+- **图片引用**：统一用 `images/xxx.png`，图片同时拷贝到 `figure/`
+- **公式**：LaTeX 格式，注意行内公式 `$` 后跟数字需空格
+- **引用**：用 `[@key]` 格式，BibTeX 条目追加到 `src/references.bib`
+- **不要照搬原文**：需整理为正式论文语气，消除口语化、重复、层级混乱
 
-将 `<proj>` 中所有论文用到的图片拷贝到 `figure/`：
+### 4. 图片归集
 
-- 每个 `<proj>` 子目录下的 `.png` 只取最终版本
-- 保留源文件名，不要重命名
-- 在 markdown 中引用时统一用 `images/<filename>.png`
+- 从 `<proj>` 收集论文用到的图片，拷贝到 `figure/`
+- 保留源文件名，引用路径统一为 `images/<filename>.png`
 
-### 4. 参考文献提取
+### 5. 参考文献提取
 
-- 从 `<proj>` 中的论文 PDF 提取关键文献的 BibTeX 条目
-- 写入 `src/references.bib`（追加，不覆盖已有条目）
-- 优先提取被报告 `.md` 明确引用的论文
-- BibTeX key 格式：`<第一作者姓氏><年份><关键词>`，如 `storn1997de`
+- 从 `<proj>` 中的论文 PDF 提取 BibTeX 条目，追加到 `src/references.bib`
+- key 格式：`<第一作者姓氏><年份><关键词>`，如 `storn1997de`
 
-### 5. 最终校验
+### 6. 最终校验
 
-完成上述步骤后，运行 `make` 验证构建是否通过。若 pandoc 报引用缺失，补全 `references.bib`；若图片 404，检查 `figure/` 中是否存在且 markdown 引用路径正确。
+运行 `make` 验证构建是否通过。若 pandoc 报引用缺失，补全 `references.bib`；若图片 404，检查路径。
