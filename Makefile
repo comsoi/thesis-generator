@@ -45,6 +45,7 @@ RENDER_SCRIPT := $(PROC_DIR)/substitute-txt.py
 SYNC_SCRIPT := $(PROC_DIR)/sync-abstract.py
 MERGE_SCRIPT := $(PROC_DIR)/merge-docs.py
 SETUP_SCRIPT := $(PROC_DIR)/setup-thesis.py
+TABLE_STYLE_FIX_SCRIPT := $(PROC_DIR)/fix-table-style.py
 
 # Lua 过滤器
 LUA_FIX_REF := $(PROC_DIR)/fix-ref.lua
@@ -95,10 +96,12 @@ gen-src: $(TYPST_FILE)
 $(MAIN_CONTENT_DOCX): $(TYPST_FILE) $(REFERENCE_DOC_EN)
 	mkdir -p $(OUT_DIR)
 	pandoc $< --resource-path=$(SRC_DIR) --bibliography=$(BIB_FILE) --csl=$(CSL_EN) --lua-filter=$(LUA_FIX_REF) --lua-filter=$(LUA_TABLE_CAPTION) --lua-filter=$(LUA_FIX_PAGE) --citeproc --lua-filter=$(LUA_FIX_CITE) -o $@ --reference-doc $(REFERENCE_DOC_EN)
+	$(PYTHON) $(TABLE_STYLE_FIX_SCRIPT) $@
 
 $(MAIN_CONTENT_DOCX_CN): $(TYPST_FILE) $(REFERENCE_DOC_CN)
 	mkdir -p $(OUT_DIR)
 	pandoc $< --resource-path=$(SRC_DIR) --bibliography=$(BIB_FILE) --csl=$(CSL_CN) --lua-filter=$(LUA_FIX_REF) --lua-filter=$(LUA_TABLE_CAPTION) --lua-filter=$(LUA_FIX_PAGE) --citeproc --lua-filter=$(LUA_FIX_CITE) -o $@ --reference-doc $(REFERENCE_DOC_CN)
+	$(PYTHON) $(TABLE_STYLE_FIX_SCRIPT) $@
 
 content: $(MAIN_CONTENT_DOCX)
 content-cn: $(MAIN_CONTENT_DOCX_CN)

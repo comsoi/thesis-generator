@@ -35,6 +35,36 @@ local function fix_figure(el)
   if not caption_para then
     return nil
   end
+
+  -- 解开 #figure(table(...), kind: table) 的包装：
+  -- Pandoc 的 DOCX writer 会把带表格的 Figure 渲染成一个 FigureTable 外壳，
+  -- 导致表格内容被重复输出。直接把内层表格提升到 body，并把 figure 的
+  -- identifier（如 tab:ch1-1）转移给表格，以便后续书签与交叉引用正常生成。
+  local function find_first_table(blocks)
+    for _, blk in ipairs(blocks) do
+      if blk.t == "Table" then
+        return blk
+      end
+      if blk.t == "Div" then
+        local found = find_first_table(blk.content)
+        if found then
+          return found
+        end
+      end
+    end
+    return nil
+  end
+
+  local inner_table = find_first_table(el.content)
+
+  if inner_table then
+    inner_table.caption = pandoc.Caption({})
+    if el.identifier and el.identifier ~= "" then
+      inner_table.identifier = el.identifier
+    end
+    return { caption_para, inner_table }
+  end
+
   el.caption = pandoc.Caption({})
   return { caption_para, el }
 end
